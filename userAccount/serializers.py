@@ -32,8 +32,6 @@ class ProfilSerializer(serializers.ModelSerializer):
         model = Profil
         fields = "__all__"
 
-
-
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length = get_username_max_length(),
@@ -104,3 +102,19 @@ class RegisterSerializer(serializers.Serializer):
         self.custom_signup(request, user)
         setup_user_email(request, user, [])
         return user
+
+
+# Ne sont pas utilisé sont la juste pour des eventuelles mise a jour
+        
+class EmployeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profil
+        fields = "__all__"
+
+        
+class ClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profil
+        fields = "__all__"
+
+

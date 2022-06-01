@@ -20,7 +20,8 @@ from dj_rest_auth.app_settings import (
 from dj_rest_auth.utils import jwt_encode
 from django.contrib.auth.models import Group, Permission, User
 from rest_framework.response import Response
-
+from rest_framework.decorators import api_view
+from . import urls
 sensitive_post_parameters_m = method_decorator(
     sensitive_post_parameters('password1', 'password2'),
 )
@@ -109,3 +110,15 @@ class RegisterView(generics.CreateAPIView):
         )
         return user
 
+@api_view(('GET',))
+def accounts(request):
+    url_list = urls.urlpatterns
+    host = request._request.get_host()
+    print(dir(request._request))
+    print(f'path {request._request.is_secure()}')
+    data = {}
+    for url in url_list:
+        pat = str(url.pattern).split('/')
+        if 1 < len(pat) < 3 and pat[1] in ['$', '']:
+            data[pat[0].strip('^')] = f"http{'s' if request._request.is_secure() else ''}://{host}/" + pat[0].strip('^')
+    return Response(data)
