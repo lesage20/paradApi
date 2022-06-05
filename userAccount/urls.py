@@ -16,5 +16,3 @@ urlpatterns = [
 ]
 
 urlpatterns += routes.urls
-
-print(urlpatterns[0].resolve('clients/')) # 'name', 'pattern', 'resolve']

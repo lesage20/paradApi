@@ -114,8 +114,6 @@ class RegisterView(generics.CreateAPIView):
 def accounts(request):
     url_list = urls.urlpatterns
     host = request._request.get_host()
-    print(dir(request._request))
-    print(f'path {request._request.is_secure()}')
     data = {}
     for url in url_list:
         pat = str(url.pattern).split('/')

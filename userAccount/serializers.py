@@ -89,7 +89,6 @@ class RegisterSerializer(serializers.Serializer):
         self.cleaned_data = self.get_cleaned_data()
         
         user = adapter.save_user(request, user, self, commit=False)
-        print(f'user: {user}')
         if "password1" in self.cleaned_data:
             try:
                 adapter.clean_password(self.cleaned_data['password1'], user=user)

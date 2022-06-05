@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from userAccount.models import Profil
 from uuid import uuid4
+import datetime
 floorStatus = [
     ('actif', 'Actif',),
     ('inactif', 'Inactif',)
@@ -124,7 +125,7 @@ class Booking(models.Model):
     checkIn = models.DateTimeField()
     checkOut = models.DateTimeField()
     status = models.CharField(max_length=15, choices=bookingStatus)
-
+    totalPrice = models.IntegerField(default=0)
     recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='bookings_recorder')
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -148,6 +149,10 @@ class Booking(models.Model):
                 except Booking.DoesNotExist:
                     self.reference = ref
                     break
+        if (self.checkOut -  self.checkIn) <= datetime.timedelta(days= 1):
+            self.totalPrice = self.room.type.price
+        else:
+            self.totalPrice = (self.checkOut -  self.checkIn).days * self.room.type.price
         return super().save(*args, **kwargs)
     
     def get_count(self):
@@ -168,4 +173,3 @@ class Depense(models.Model):
 
     def __str__(self):
         return self.title
-
