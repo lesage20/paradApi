@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-apq(z__w2vp_e3uqxq9c8dmtrhrh7orrl2cw%qjoqpm)unt551
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['paradisias-api.herokuapp.com', '127.0.0.1']
+ALLOWED_HOSTS = ['paradisias-api.herokuapp.com', '127.0.0.1', 'localhost', "192.168.43.108"]
 
 
 # Application definition

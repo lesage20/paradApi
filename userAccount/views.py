@@ -33,14 +33,14 @@ class ProfilViewset(viewsets.ModelViewSet):
     serializer_class = ProfilSerializer
 
 class ClientViewset(viewsets.ModelViewSet):
-    clientsGroup = Group.objects.filter(name='client').values_list('pk', flat=True)
-    users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk', flat=True)
+    clientsGroup = Group.objects.filter(name='client').values_list('pk')
+    users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
     serializer_class = ProfilSerializer
 
 class EmployeViewset(viewsets.ModelViewSet):
-    clientsGroup = Group.objects.exclude(name='client').exclude(name='admin').values_list('pk', flat=True)
-    users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk', flat=True)
+    clientsGroup = Group.objects.exclude(name='client').exclude(name='admin').values_list('pk')
+    users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
     serializer_class = ProfilSerializer
 
