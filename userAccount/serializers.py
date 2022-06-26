@@ -31,6 +31,14 @@ class ProfilSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profil
         fields = "__all__"
+    
+    # def create(self, validated_data):
+    #     # print(validated_data)
+    #     user = validated_data.pop('user')
+    #     print(user.groups.all())
+    #     # user = User.objects.create(**validated_data)
+    #     # Profile.objects.create(user=user, **profile_data)
+    #     # return user
 
 class RegisterSerializer(serializers.Serializer):
     username = serializers.CharField(

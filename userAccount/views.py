@@ -20,8 +20,11 @@ from dj_rest_auth.app_settings import (
 from dj_rest_auth.utils import jwt_encode
 from django.contrib.auth.models import Group, Permission, User
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from . import urls
+from .permissions import NewModelPermissions
+
+
 sensitive_post_parameters_m = method_decorator(
     sensitive_post_parameters('password1', 'password2'),
 )
@@ -29,16 +32,19 @@ sensitive_post_parameters_m = method_decorator(
 
 # serializers go here
 class ProfilViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     queryset = Profil.objects.all()
     serializer_class = ProfilSerializer
 
 class ClientViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     clientsGroup = Group.objects.filter(name='client').values_list('pk')
     users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
     serializer_class = ProfilSerializer
 
 class EmployeViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     clientsGroup = Group.objects.exclude(name='client').exclude(name='admin').values_list('pk')
     users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
@@ -46,14 +52,17 @@ class EmployeViewset(viewsets.ModelViewSet):
 
 
 class PermissionViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     
 class GroupViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     
 class UserViewset(viewsets.ModelViewSet):
+    permission_classes = [NewModelPermissions]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -111,12 +120,14 @@ class RegisterView(generics.CreateAPIView):
         return user
 
 @api_view(('GET',))
+@permission_classes([])
 def accounts(request):
+    
     url_list = urls.urlpatterns
     host = request._request.get_host()
     data = {}
     for url in url_list:
         pat = str(url.pattern).split('/')
         if 1 < len(pat) < 3 and pat[1] in ['$', '']:
-            data[pat[0].strip('^')] = f"http{'s' if request._request.is_secure() else ''}://{host}/" + pat[0].strip('^')
+            data[pat[0].strip('^')] = f"http{'s' if request._request.is_secure() else ''}://{host}/accounts/" + pat[0].strip('^')
     return Response(data)

@@ -34,7 +34,11 @@ class Profil(models.Model):
     class Meta:
         verbose_name = "Profil utilisateur"
         verbose_name = "Profils  utilisateur"
-
+    
+    def save(self, *args, **kwargs):
+        self.role = self.user.groups.all()[0]
+        return super().save(*args, **kwargs)
+    
     def __str__(self) -> str:
         return f'{self.name} {self.firstname}' or self.user.username or f'user {self.pk}'
     
