@@ -25,7 +25,19 @@ class CouponSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = '__all__'
+        fields = ["id",
+        "reference",
+        "checkIn",
+        "checkOut",
+        "status",
+        "totalPrice",
+        "created_at",
+        "updated_at",
+        "guest",
+        "roomType",
+        "room",
+        "coupon",
+        "recorded_by", "url"]
         model = Booking
 
 class DepenseSerializer(serializers.ModelSerializer):
