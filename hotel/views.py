@@ -31,12 +31,18 @@ class BookingFilter(filters.FilterSet):
     class Meta:
         model = Booking
         fields = ['checkIn_date', 'checkOut_date']
+        
 class BookingViewset(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
     serializer_class = BookingSerializer
     queryset = Booking.objects.all().order_by('-created_at')
-    # filterset_fields = ['guest', 'room', 'checkIn', 'checkOut', 'recorded_by' ]
     filterset_class = BookingFilter
+
+class ReservationViewset(viewsets.ModelViewSet):
+    permission_classes = [DjangoModelPermissions]
+    serializer_class = ReservationSerializer
+    queryset = Reservation.objects.all().order_by('-created_at')
+    filterset_fields = ['guest', 'room', 'checkIn', 'checkOut', 'recorded_by' ]
     
     
    

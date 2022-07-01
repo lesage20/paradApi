@@ -119,7 +119,6 @@ class Booking(models.Model):
     # TODO: Define fields here
     reference = models.CharField(max_length=10, null=True, blank=True, unique=True)
     guest = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='bookings_guest')
-    roomType = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='bookings')
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='bookings')
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
     checkIn = models.DateTimeField()
@@ -173,3 +172,32 @@ class Depense(models.Model):
 
     def __str__(self):
         return self.title
+
+class Reservation(models.Model):
+    reference = models.CharField(max_length=10, null=True, blank=True, unique=True)
+    guest = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='reservation_guest')
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='reservations')
+    checkIn = models.DateTimeField()
+    checkOut = models.DateTimeField()
+    recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='reservation_recorder')
+    created_at = models.DateTimeField( auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Reservation"
+        verbose_name_plural = "Reservations"
+
+    def __str__(self):
+        return f"{self.room.number} Réservé le {self.checkIn}" 
+
+    def save(self, *args, **kwargs):
+        if not self.reference:
+            while True:
+                ref = str(uuid4().hex)[:10]
+                try: 
+                    Reservation.objects.get(reference=ref)
+                except Booking.DoesNotExist:
+                    self.reference = ref
+                    break
+        
+        return super().save(*args, **kwargs)

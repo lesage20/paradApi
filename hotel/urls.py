@@ -7,5 +7,6 @@ routes.register('chambres', RoomViewset)
 routes.register('coupons', CouponViewset)
 routes.register('locations', BookingViewset)
 routes.register('depenses', DepenseViewset)
+routes.register('reservations', ReservationViewset)
 
 urlpatterns = routes.urls

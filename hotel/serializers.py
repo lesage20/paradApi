@@ -34,11 +34,15 @@ class BookingSerializer(serializers.ModelSerializer):
         "created_at",
         "updated_at",
         "guest",
-        "roomType",
         "room",
         "coupon",
         "recorded_by", "url"]
         model = Booking
+class ReservationSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = "__all__"
+        model = Reservation
+        
 
 class DepenseSerializer(serializers.ModelSerializer):
     class Meta:
