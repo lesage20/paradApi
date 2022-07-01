@@ -18,3 +18,4 @@ django-allauth = "*"
 dj-rest-auth = {extras = [ "with_social",]}
 gunicorn = "*"
 whitenoise = "*"
+django-filter = "*"
