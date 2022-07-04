@@ -215,3 +215,4 @@ SIMPLE_JWT = {
      'AUTH_HEADER_TYPES': ('Bearer',),
      'UPDATE_LAST_LOGIN': True,
 }
+LOGIN_URL = "/auth/login"

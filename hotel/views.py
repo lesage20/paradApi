@@ -41,8 +41,8 @@ class BookingViewset(viewsets.ModelViewSet):
 class ReservationViewset(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
     serializer_class = ReservationSerializer
-    queryset = Reservation.objects.all().order_by('-created_at')
-    filterset_fields = ['guest', 'room', 'checkIn', 'checkOut', 'recorded_by' ]
+    queryset = Reservation.objects.all()
+    # filterset_fields = ['guest', 'room', 'checkIn', 'checkOut', 'recorded_by' ]
     
     
    

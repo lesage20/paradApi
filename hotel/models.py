@@ -17,6 +17,11 @@ bookingStatus = [
     ('payée', 'Payée',),
     ('archivée', 'Archivée',)
 ]
+reservationStatus = [
+    ('en attente', 'En attente',),
+    ('confirmée', 'Confirmée',),
+    ('annulée', 'Annulée',)
+]
 
 class Floor(models.Model):
     """Gestion de niveau d'étage."""
@@ -182,6 +187,7 @@ class Reservation(models.Model):
     recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='reservation_recorder')
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=15, choices=reservationStatus, default="en attente")
 
     class Meta:
         verbose_name = "Reservation"
@@ -196,7 +202,7 @@ class Reservation(models.Model):
                 ref = str(uuid4().hex)[:10]
                 try: 
                     Reservation.objects.get(reference=ref)
-                except Booking.DoesNotExist:
+                except Reservation.DoesNotExist:
                     self.reference = ref
                     break
         
