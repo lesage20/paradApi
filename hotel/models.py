@@ -17,6 +17,12 @@ bookingStatus = [
     ('payée', 'Payée',),
     ('archivée', 'Archivée',)
 ]
+payment = [
+    ('espece', 'Espèce',),
+    ('cheque', 'Chèque',),
+    ('visa', 'Visa',),
+    ('devise', 'Devise',),
+]
 reservationStatus = [
     ('en attente', 'En attente',),
     ('confirmée', 'Confirmée',),
@@ -130,13 +136,13 @@ class Booking(models.Model):
     checkOut = models.DateTimeField()
     status = models.CharField(max_length=15, choices=bookingStatus)
     totalPrice = models.IntegerField(default=0)
+    payment = models.CharField(max_length=15, choices=payment, default="espece")
     recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='bookings_recorder')
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         """Affichage des locations."""
-
         verbose_name = 'Location'
         verbose_name_plural = 'Locations'
 

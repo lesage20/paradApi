@@ -36,7 +36,9 @@ class BookingSerializer(serializers.ModelSerializer):
         "guest",
         "room",
         "coupon",
-        "recorded_by", "url"]
+        "recorded_by",
+        "payment",
+        "url"]
         model = Booking
         
 class ReservationSerializer(serializers.ModelSerializer):
