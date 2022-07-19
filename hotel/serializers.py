@@ -44,7 +44,8 @@ class BookingSerializer(serializers.ModelSerializer):
 class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
-        fields = fields = ["id",
+        fields = fields = [
+        "id",
         "reference",
         "checkIn",
         "checkOut",
@@ -53,7 +54,9 @@ class ReservationSerializer(serializers.ModelSerializer):
         "updated_at",
         "guest",
         "room",
-        "recorded_by", "url"]
+        "recorded_by", 
+        "url"
+        ]
         
 
 class DepenseSerializer(serializers.ModelSerializer):

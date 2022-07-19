@@ -29,6 +29,12 @@ reservationStatus = [
     ('annulée', 'Annulée',)
 ]
 
+roomStatus = [
+    ('propre', 'Propre',),
+    ('sale', 'Sale',),
+    ('nettoyage', 'Nettoyage',)
+]
+
 class Floor(models.Model):
     """Gestion de niveau d'étage."""
 
@@ -85,6 +91,7 @@ class Room(models.Model):
     number = models.CharField(max_length=5)
     floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='rooms')
     type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
+    status = models.CharField( max_length=10,  choices=roomStatus, default="propre")
 
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -134,12 +141,15 @@ class Booking(models.Model):
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
     checkIn = models.DateTimeField()
     checkOut = models.DateTimeField()
+    adults = models.IntegerField(default=1)
+    children = models.IntegerField(default=0)
     status = models.CharField(max_length=15, choices=bookingStatus)
     totalPrice = models.IntegerField(default=0)
     payment = models.CharField(max_length=15, choices=payment, default="espece")
     recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='bookings_recorder')
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     class Meta:
         """Affichage des locations."""

@@ -22,7 +22,7 @@ from django.contrib.auth.models import Group, Permission, User
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from . import urls
-from .permissions import NewModelPermissions
+from rest_framework.permissions import DjangoModelPermissions
 
 
 sensitive_post_parameters_m = method_decorator(
@@ -32,19 +32,19 @@ sensitive_post_parameters_m = method_decorator(
 
 # serializers go here
 class ProfilViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     queryset = Profil.objects.all()
     serializer_class = ProfilSerializer
 
 class ClientViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     clientsGroup = Group.objects.filter(name='client').values_list('pk')
     users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
     serializer_class = ProfilSerializer
 
 class EmployeViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     clientsGroup = Group.objects.exclude(name='client').exclude(name='admin').values_list('pk')
     users = User.objects.filter(groups__in=list(clientsGroup)).values_list('pk')
     queryset = Profil.objects.filter(user_id__in=list(users))
@@ -52,17 +52,17 @@ class EmployeViewset(viewsets.ModelViewSet):
 
 
 class PermissionViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     queryset = Permission.objects.all()
     serializer_class = PermissionSerializer
     
 class GroupViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     
 class UserViewset(viewsets.ModelViewSet):
-    permission_classes = [NewModelPermissions]
+    permission_classes = [DjangoModelPermissions]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
