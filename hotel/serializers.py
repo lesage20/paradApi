@@ -31,13 +31,15 @@ class BookingSerializer(serializers.ModelSerializer):
         "checkOut",
         "status",
         "totalPrice",
-        "created_at",
-        "updated_at",
         "guest",
+        "adults",
+        "children",
         "room",
         "coupon",
         "recorded_by",
         "payment",
+        "created_at",
+        "updated_at",
         "url"]
         model = Booking
         

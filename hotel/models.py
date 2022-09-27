@@ -13,8 +13,11 @@ guestGenders = [
 ]
 
 bookingStatus = [
-    ('en attente', 'En attente',),
-    ('payée', 'Payée',),
+    ('pj', 'pj',),
+    ('dj', 'dj',),
+    ('dt', 'dt',),
+    ('dp', 'dp',),
+    ('paye', 'Payée',),
     ('archivée', 'Archivée',)
 ]
 payment = [
@@ -30,8 +33,11 @@ reservationStatus = [
 ]
 
 roomStatus = [
-    ('propre', 'Propre',),
-    ('sale', 'Sale',),
+    ('os', 'Occupée Sale',),
+    ('og', 'Occupée Gratuite',),
+    ('op', 'Occupée Propre',),
+    ('lp', 'Libre Propre',),
+    ('ls', 'Libre Sale',),
     ('nettoyage', 'Nettoyage',)
 ]
 
@@ -91,7 +97,7 @@ class Room(models.Model):
     number = models.CharField(max_length=5)
     floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='rooms')
     type = models.ForeignKey(RoomType, on_delete=models.CASCADE, related_name='rooms')
-    status = models.CharField( max_length=10,  choices=roomStatus, default="propre")
+    status = models.CharField( max_length=10,  choices=roomStatus, default="lp")
 
     created_at = models.DateTimeField( auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
