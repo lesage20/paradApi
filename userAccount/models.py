@@ -14,7 +14,7 @@ idTypes = [
     
 ]
 class Profil(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     avatar = models.ImageField(upload_to="avatars/", default="avatars/usericon.png", blank=True)
     name = models.CharField(max_length=50) 
     firstname = models.CharField(max_length=100)
@@ -36,7 +36,10 @@ class Profil(models.Model):
         verbose_name = "Profils  utilisateur"
     
     def save(self, *args, **kwargs):
-        self.role = self.user.groups.all()[0]
+        if not self.user:
+            self.role = Group.objects.get(name="client")
+        else:
+            self.role = self.user.groups.all()[0]
         return super().save(*args, **kwargs)
     
     def __str__(self) -> str:
