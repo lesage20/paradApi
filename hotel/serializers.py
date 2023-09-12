@@ -43,6 +43,18 @@ class BookingSerializer(serializers.ModelSerializer):
         "url"]
         model = Booking
         
+class FactureSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ["id",
+        "booking",
+        "status",
+        "amount",
+        "date",
+        "created_at",
+        "updated_at",
+        "url"]
+        model = Facture
+        
 class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation

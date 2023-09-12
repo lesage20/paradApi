@@ -39,7 +39,6 @@ class ProfilViewset(viewsets.ModelViewSet):
 class ClientViewset(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
     clientGroup = Group.objects.get(name='client')
-    print(clientGroup)
     users = User.objects.filter(groups=clientGroup).values_list('pk')
     queryset = Profil.objects.filter(role=clientGroup)
     serializer_class = ProfilSerializer
