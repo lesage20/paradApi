@@ -13,12 +13,11 @@ guestGenders = [
 ]
 
 bookingStatus = [
-    ('pj', 'pj',),
-    ('dj', 'dj',),
-    ('dt', 'dt',),
-    ('dp', 'dp',),
-    ('paye', 'Payée',),
-    ('archivée', 'Archivée',)
+    ('pj', 'Payé jour',),
+    ('dj', 'Dette jour',),
+    ('dt', 'Dette totale',),
+    ('dp', 'Dette payée',),
+    ('archive', 'Archivée',)
 ]
 payment = [
     ('espece', 'Espèce',),
@@ -175,14 +174,28 @@ class Booking(models.Model):
                 except Booking.DoesNotExist:
                     self.reference = ref
                     break
-        if (self.checkOut -  self.checkIn) <= datetime.timedelta(days= 1):
-            self.totalPrice = self.room.type.price
-        else:
-            self.totalPrice = (self.checkOut -  self.checkIn).days * self.room.type.price
+        if not self.totalPrice:
+            if (self.checkOut -  self.checkIn) <= datetime.timedelta(days= 1):
+                self.totalPrice = self.room.type.price
+            else:
+                self.totalPrice = (self.checkOut -  self.checkIn).days * self.room.type.price
         return super().save(*args, **kwargs)
     
     def get_count(self):
         return self.objects.all().count
+class Facture(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='factures')
+    amount = models.IntegerField()
+    status = models.CharField(max_length=15, choices=bookingStatus)
+    created_at = models.DateTimeField( auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = ("depense")
+        verbose_name_plural =("depenses")
+
+    def __str__(self):
+        return self.title
 
 class Depense(models.Model):
     title = models.CharField(max_length=50)
