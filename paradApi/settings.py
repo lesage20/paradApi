@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-apq(z__w2vp_e3uqxq9c8dmtrhrh7orrl2cw%qjoqpm)unt551
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['185.98.136.111', '127.0.0.1']
+ALLOWED_HOSTS = ['127.0.0.1', 'api.paradisias-hotel.com']
 
 
 # Application definition
@@ -157,7 +157,7 @@ STATIC_ROOT = BASE_DIR / 'static_cdn'
 
 MEDIA_ROOT = BASE_DIR / 'media_cdn'
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default primary key field type
