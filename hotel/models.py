@@ -195,7 +195,7 @@ class Facture(models.Model):
         verbose_name_plural =("depenses")
 
     def __str__(self):
-        return self.title
+        return f"{self.status} - {self.amount}"
 
 class Depense(models.Model):
     title = models.CharField(max_length=50)
