@@ -39,8 +39,8 @@ class Profil(models.Model):
     id_delivered_place = models.CharField(max_length=150)
     id_delivered_by = models.CharField(max_length=150)
     # Parent details
-    father = models.CharField(max_length=150, null=True)
-    mother = models.CharField(max_length=150, null=True)
+    father = models.CharField(max_length=150, null=True, blank=True)
+    mother = models.CharField(max_length=150, null=True, blank=True)
 
     
 
