@@ -78,3 +78,9 @@ class DepenseSerializer(serializers.ModelSerializer):
         model = Depense
 
 
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = '__all__'
+        model = Payment
+
+

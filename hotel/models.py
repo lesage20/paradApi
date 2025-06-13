@@ -43,7 +43,10 @@ roomStatus = [
     ('ls', 'Libre Sale',),
     ('nettoyage', 'Nettoyage',)
 ]
-
+couponType = [
+    ('fixe', 'Fixe',),
+    ('pourcentage', 'Pourcentage',)
+]
 class Floor(models.Model):
     """Gestion de niveau d'étage."""
 
@@ -121,8 +124,9 @@ class Coupon(models.Model):
 
     # TODO: Define fields here
     title = models.CharField(max_length=50)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     discount = models.IntegerField(default=0)
+    type = models.CharField(max_length=12, choices=couponType, default="fixe")
     code = models.CharField(max_length=10)
 
     created_at = models.DateTimeField( auto_now_add=True)
@@ -154,6 +158,8 @@ class Booking(models.Model):
     children = models.IntegerField(default=0)
     status = models.CharField(max_length=15, choices=bookingStatus)
     totalPrice = models.IntegerField(default=0)
+    amountPaid = models.IntegerField(default=0)
+    amountDue = models.IntegerField(default=0)
     payment = models.CharField(max_length=15, choices=payment, default="espece")
     recorded_by = models.ForeignKey(Profil, on_delete=models.CASCADE, related_name='bookings_recorder')
     created_at = models.DateTimeField( auto_now_add=True)
@@ -230,7 +236,24 @@ class Booking(models.Model):
         
         if not self.pk:  # Nouvelle instance
             self.status = 'pj'
-        self.totalPrice = self.calculate_days() * self.room.type.price
+            
+        roomPrice = self.room.type.price
+        if self.coupon:
+            if self.coupon.type == 'fixe':
+                roomPrice = self.room.type.price - self.coupon.discount
+            else:  # type == 'pourcentage'
+                if self.coupon.discount > 100:
+                    self.coupon.discount = 100
+                if self.coupon.discount < 0:
+                    self.coupon.discount = 0
+                    
+                roomPrice = self.room.type.price * (1 - self.coupon.discount / 100)
+        
+        self.totalPrice = self.calculate_days() * roomPrice
+        self.amountDue = self.totalPrice - self.amountPaid
+        if (self.amountDue <= 0):
+            self.amountDue = 0
+
         return super().save(*args, **kwargs)
     
     def get_count(self):
@@ -240,13 +263,22 @@ class Payment(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments')
     amount = models.IntegerField()
     status = models.CharField(max_length=15, choices=paymentStatus)
-    created_at = models.DateTimeField( auto_now_add=True)
+    payment = models.CharField(max_length=15, choices=payment, default="espece")
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = ("paiement")
         verbose_name_plural = ("paiements")
-    
+
+    def save(self, *args, **kwargs):
+        # Calculer le nouveau montant total payé
+        total_paid = sum(payment.amount for payment in self.booking.payments.all())
+        # Mettre à jour le montant payé dans le booking
+        self.booking.amountPaid = total_paid
+        self.booking.save()
+        super().save(*args, **kwargs)
+
 class Facture(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='factures')
     amount = models.IntegerField()

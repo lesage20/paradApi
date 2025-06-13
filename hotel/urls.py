@@ -9,5 +9,6 @@ routes.register('locations', BookingViewset)
 routes.register('factures', FactureViewset)
 routes.register('depenses', DepenseViewset)
 routes.register('reservations', ReservationViewset)
+routes.register('paiements', PaymentViewset)
 
 urlpatterns = routes.urls

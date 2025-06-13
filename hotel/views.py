@@ -58,3 +58,14 @@ class DepenseViewset(viewsets.ModelViewSet):
     serializer_class = DepenseSerializer
     queryset = Depense.objects.all().order_by('-created_at')
     
+class PaymentViewset(viewsets.ModelViewSet):
+    permission_classes = [DjangoModelPermissions]
+    serializer_class = PaymentSerializer
+    queryset = Payment.objects.all().order_by('-created_at')
+
+    def get_queryset(self):
+        queryset = Payment.objects.all().order_by('-created_at')
+        booking_id = self.request.query_params.get('booking', None)
+        if booking_id is not None:
+            queryset = queryset.filter(booking_id=booking_id)
+        return queryset
