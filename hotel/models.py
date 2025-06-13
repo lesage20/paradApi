@@ -13,11 +13,15 @@ guestGenders = [
 ]
 
 bookingStatus = [
+    ('ongoing', 'En cours',),
+    ('completed', 'Terminée',),
+    # ('cancelled', 'Annulée',)
+]
+paymentStatus = [
     ('pj', 'Payé jour',),
     ('dj', 'Dette jour',),
     ('dt', 'Dette totale',),
     ('dp', 'Dette payée',),
-    ('archive', 'Archivée',)
 ]
 payment = [
     ('espece', 'Espèce',),
@@ -165,6 +169,55 @@ class Booking(models.Model):
         """Unicode representation of Booking."""
         return f'{self.room.number} loué par {self.guest.name} {self.guest.firstname} le {self.checkIn}'    
     
+    def calculate_days(self):
+        """
+        Calcule le nombre de jours selon les règles suivantes :
+        - Si le client arrive avant 4h :
+          * Sortie avant 13h = 1 jour
+          * Sortie après 13h = 2 jours
+        - Si le client arrive après 4h :
+          * Sortie avant 13h le lendemain = 1 jour
+          * Sortie après 13h le lendemain = 2 jours
+        - Pour les séjours de plusieurs jours :
+          * Le jour d'arrivée compte comme un jour complet
+          * Le jour de départ compte comme un jour complet si départ après 13h
+        """
+        # On normalise les dates pour ignorer l'heure d'arrivée
+        check_in_date = self.checkIn.date()
+        check_out_date = self.checkOut.date()
+        
+        # On vérifie les heures d'arrivée et de départ
+        check_in_hour = self.checkIn.hour
+        check_out_hour = self.checkOut.hour
+        
+        # Calcul du nombre de jours de base
+        days = (check_out_date - check_in_date).days
+        
+        # Si c'est le même jour
+        if check_in_date == check_out_date:
+            if check_in_hour < 4:
+                if check_out_hour >= 13:
+                    days = 2
+                else:
+                    days = 1
+            else:
+                days = 1
+        # Si c'est le lendemain
+        elif (check_out_date - check_in_date).days == 1:
+            if check_out_hour >= 13:
+                days = 2
+            else:
+                days = 1
+        # Si plus d'un jour
+        else:
+            # On ajoute un jour pour le jour d'arrivée
+            days += 1
+            # On ajoute un jour si départ après 13h
+            if check_out_hour >= 13:
+                days += 1
+            
+        return max(1, days)  # On retourne au minimum 1 jour
+
     def save(self, *args, **kwargs):
         if not self.reference:
             while True:
@@ -174,15 +227,26 @@ class Booking(models.Model):
                 except Booking.DoesNotExist:
                     self.reference = ref
                     break
-        if not self.totalPrice:
-            if (self.checkOut -  self.checkIn) <= datetime.timedelta(days= 1):
-                self.totalPrice = self.room.type.price
-            else:
-                self.totalPrice = (self.checkOut -  self.checkIn).days * self.room.type.price
+        
+        if not self.pk:  # Nouvelle instance
+            self.status = 'pj'
+        self.totalPrice = self.calculate_days() * self.room.type.price
         return super().save(*args, **kwargs)
     
     def get_count(self):
         return self.objects.all().count
+    
+class Payment(models.Model):
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments')
+    amount = models.IntegerField()
+    status = models.CharField(max_length=15, choices=paymentStatus)
+    created_at = models.DateTimeField( auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = ("paiement")
+        verbose_name_plural = ("paiements")
+    
 class Facture(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='factures')
     amount = models.IntegerField()
@@ -242,3 +306,4 @@ class Reservation(models.Model):
                     break
         
         return super().save(*args, **kwargs)
+

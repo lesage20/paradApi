@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-apq(z__w2vp_e3uqxq9c8dmtrhrh7orrl2cw%qjoqpm)unt551
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'api.paradisias-hotel.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'api.paradisias-hotel.com']
 
 
 # Application definition
