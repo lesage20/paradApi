@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: paradisias-api
+    ports:
+      - "9001:9001"
+    environment:
+      - DEBUG=False
+      - DJANGO_SETTINGS_MODULE=paradApi.settings
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+    volumes:
+      - static_volume:/app/static_cdn
+      - media_volume:/app/media_cdn
+    networks:
+      - paradisias_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Service PostgreSQL (optionnel pour production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: paradisias-db
+    environment:
+      POSTGRES_DB: paradisias
+      POSTGRES_USER: paradisias_user
+      POSTGRES_PASSWORD: paradisias_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - paradisias_network
+    restart: unless-stopped
+
+  # Service Redis (optionnel pour cache)
+  redis:
+    image: redis:7-alpine
+    container_name: paradisias-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - paradisias_network
+    restart: unless-stopped
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:
+
+networks:
+  paradisias_network:
+    driver: bridge 

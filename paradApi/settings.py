@@ -63,6 +63,9 @@ INSTALLED_APPS = [
     
     #application hotel,
     'hotel',
+    
+    # Application reports pour les statistiques
+    'reports',
 ]
 
 SITE_ID = 1

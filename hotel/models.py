@@ -263,7 +263,7 @@ class Payment(models.Model):
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name='payments')
     amount = models.IntegerField()
     status = models.CharField(max_length=15, choices=paymentStatus)
-    payment = models.CharField(max_length=15, choices=payment, default="espece")
+    type = models.CharField(max_length=15, choices=payment, default="espece")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -273,9 +273,8 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         # Calculer le nouveau montant total payé
-        total_paid = sum(payment.amount for payment in self.booking.payments.all())
         # Mettre à jour le montant payé dans le booking
-        self.booking.amountPaid = total_paid
+        self.booking.amountPaid += self.amount
         self.booking.save()
         super().save(*args, **kwargs)
 
