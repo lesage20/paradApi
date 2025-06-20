@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     UnifiedKPIView,
     DashboardSummaryView,
-    ChartDataView
+    ChartDataView,
+    RoomStatusChartView
 )
 
 app_name = 'reports'
@@ -16,4 +17,6 @@ urlpatterns = [
     
     # Données pour les graphiques du dashboard
     path('dashboard/charts/', ChartDataView.as_view(), name='chart-data'),
+    
+    path('dashboard/room-status-chart/', RoomStatusChartView.as_view(), name='room-status-chart'),
 ] 

@@ -41,6 +41,7 @@ roomStatus = [
     ('op', 'Occupée Propre',),
     ('lp', 'Libre Propre',),
     ('ls', 'Libre Sale',),
+    ('hs', 'Hors Service',),
     ('nettoyage', 'Nettoyage',)
 ]
 couponType = [
@@ -253,7 +254,8 @@ class Booking(models.Model):
         self.amountDue = self.totalPrice - self.amountPaid
         if (self.amountDue <= 0):
             self.amountDue = 0
-
+        self.room.status = 'op'
+        self.room.save()
         return super().save(*args, **kwargs)
     
     def get_count(self):
@@ -335,6 +337,7 @@ class Reservation(models.Model):
                 except Reservation.DoesNotExist:
                     self.reference = ref
                     break
-        
+        self.room.status = 'reservee'
+        # self.room.save()
         return super().save(*args, **kwargs)
 

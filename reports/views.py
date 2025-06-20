@@ -14,7 +14,8 @@ from .serializers import (
     UnifiedKPISerializer,
     PeriodFilterSerializer,
     DashboardSummarySerializer,
-    ChartDataSerializer
+    ChartDataSerializer,
+    RoomStatusChartSerializer
 )
 
 
@@ -897,3 +898,82 @@ class ChartDataView(APIView):
             'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
         ]
         return months[month]
+
+class RoomStatusChartView(APIView):
+    """API pour le graphique des états de chambres à l'instant T"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            # Obtenir le timestamp actuel
+            now = timezone.now()
+            
+            # Calculer les statistiques des chambres
+            # Chambres libres (propres + sales)
+            chambres_libres_propres = Room.objects.filter(status='lp').count()
+            chambres_libres_sales = Room.objects.filter(status='ls').count()
+            chambres_libres = chambres_libres_propres + chambres_libres_sales
+            
+            # Chambres occupées (propres + sales + gratuites)
+            chambres_occupees_propres = Room.objects.filter(status='op').count()
+            chambres_occupees_sales = Room.objects.filter(status='os').count()
+            chambres_occupees_gratuites = Room.objects.filter(status='og').count()
+            chambres_occupees = chambres_occupees_propres + chambres_occupees_sales + chambres_occupees_gratuites
+            
+            # Chambres en nettoyage
+            chambres_nettoyage = Room.objects.filter(status='nettoyage').count()
+            
+            # Chambres hors service
+            chambres_hors_service = Room.objects.filter(status='hs').count()
+            
+            # Total des chambres
+            total_chambres = Room.objects.count()
+            
+            # Calculer les pourcentages
+            if total_chambres > 0:
+                pourcentage_libres = Decimal((chambres_libres / total_chambres) * 100).quantize(Decimal('0.01'))
+                pourcentage_occupees = Decimal((chambres_occupees / total_chambres) * 100).quantize(Decimal('0.01'))
+                pourcentage_nettoyage = Decimal((chambres_nettoyage / total_chambres) * 100).quantize(Decimal('0.01'))
+                pourcentage_hors_service = Decimal((chambres_hors_service / total_chambres) * 100).quantize(Decimal('0.01'))
+            else:
+                pourcentage_libres = Decimal('0.00')
+                pourcentage_occupees = Decimal('0.00')
+                pourcentage_nettoyage = Decimal('0.00')
+                pourcentage_hors_service = Decimal('0.00')
+            
+            # Préparer les données pour le graphique
+            chart_labels = ['Libres', 'Occupées', 'Nettoyage', 'Hors Service']
+            chart_data = [chambres_libres, chambres_occupees, chambres_nettoyage, chambres_hors_service]
+            chart_colors = ['#28a745', '#dc3545', '#ffc107', '#6c757d']  # Vert, Rouge, Jaune, Gris
+            
+            # Construire la réponse
+            data = {
+                'chambres_libres': chambres_libres,
+                'chambres_occupees': chambres_occupees,
+                'chambres_nettoyage': chambres_nettoyage,
+                'chambres_hors_service': chambres_hors_service,
+                'chambres_libres_propres': chambres_libres_propres,
+                'chambres_libres_sales': chambres_libres_sales,
+                'chambres_occupees_propres': chambres_occupees_propres,
+                'chambres_occupees_sales': chambres_occupees_sales,
+                'chambres_occupees_gratuites': chambres_occupees_gratuites,
+                'total_chambres': total_chambres,
+                'pourcentage_libres': pourcentage_libres,
+                'pourcentage_occupees': pourcentage_occupees,
+                'pourcentage_nettoyage': pourcentage_nettoyage,
+                'pourcentage_hors_service': pourcentage_hors_service,
+                'labels': chart_labels,
+                'data': chart_data,
+                'colors': chart_colors,
+                'timestamp': now.isoformat(),
+                'last_updated': now.isoformat()
+            }
+            
+            return Response(data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors du calcul des statistiques des chambres: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

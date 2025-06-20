@@ -150,3 +150,53 @@ class ChartDataSerializer(serializers.Serializer):
     
     # Informations de contexte
     generated_at = serializers.DateTimeField(read_only=True) 
+
+
+class RoomStatusChartSerializer(serializers.Serializer):
+    """Serializer pour le graphique des états de chambres à l'instant T"""
+    
+    # Données du graphique
+    chambres_libres = serializers.IntegerField(read_only=True, help_text="Nombre de chambres libres (propres + sales)")
+    chambres_occupees = serializers.IntegerField(read_only=True, help_text="Nombre de chambres occupées (toutes catégories)")
+    chambres_nettoyage = serializers.IntegerField(read_only=True, help_text="Nombre de chambres en cours de nettoyage")
+    chambres_hors_service = serializers.IntegerField(read_only=True, help_text="Nombre de chambres hors service")
+    
+    # Détails des chambres libres
+    chambres_libres_propres = serializers.IntegerField(read_only=True, required=False)
+    chambres_libres_sales = serializers.IntegerField(read_only=True, required=False)
+    
+    # Détails des chambres occupées  
+    chambres_occupees_propres = serializers.IntegerField(read_only=True, required=False)
+    chambres_occupees_sales = serializers.IntegerField(read_only=True, required=False)
+    chambres_occupees_gratuites = serializers.IntegerField(read_only=True, required=False)
+    
+    # Statistiques générales
+    total_chambres = serializers.IntegerField(read_only=True, help_text="Nombre total de chambres")
+    
+    # Pourcentages
+    pourcentage_libres = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    pourcentage_occupees = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    pourcentage_nettoyage = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    pourcentage_hors_service = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
+    
+    # Données pour le graphique (labels et valeurs)
+    chart_labels = serializers.ListField(
+        child=serializers.CharField(), 
+        read_only=True,
+        help_text="Labels pour le graphique: ['Libres', 'Occupées', 'Nettoyage', 'Hors Service']"
+    )
+    chart_data = serializers.ListField(
+        child=serializers.IntegerField(), 
+        read_only=True,
+        help_text="Valeurs correspondantes aux labels"
+    )
+    chart_colors = serializers.ListField(
+        child=serializers.CharField(), 
+        read_only=True,
+        help_text="Couleurs suggérées pour le graphique"
+    )
+    
+    # Informations de contexte
+    timestamp = serializers.DateTimeField(read_only=True, help_text="Horodatage de la génération des données")
+    last_updated = serializers.DateTimeField(read_only=True, help_text="Dernière mise à jour des données")
+
