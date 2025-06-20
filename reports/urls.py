@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     UnifiedKPIView,
-    DashboardSummaryView
+    DashboardSummaryView,
+    ChartDataView
 )
 
 app_name = 'reports'
@@ -12,4 +13,7 @@ urlpatterns = [
     
     # Résumé global du dashboard
     path('dashboard/summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
+    
+    # Données pour les graphiques du dashboard
+    path('dashboard/charts/', ChartDataView.as_view(), name='chart-data'),
 ] 

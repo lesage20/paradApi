@@ -108,4 +108,45 @@ class DashboardSummarySerializer(serializers.Serializer):
     taux_occupation_year = serializers.DecimalField(max_digits=5, decimal_places=2, read_only=True)
     
     # Données de contexte
-    date_derniere_mise_a_jour = serializers.DateTimeField(read_only=True) 
+    date_derniere_mise_a_jour = serializers.DateTimeField(read_only=True)
+
+
+class ChartDataSerializer(serializers.Serializer):
+    """Serializer pour les données de graphiques du dashboard"""
+    
+    CHART_TYPE_CHOICES = [
+        ('revenus', 'Revenus'),
+        ('occupation', 'Occupation'),
+        ('reservations', 'Réservations'),
+    ]
+    
+    PERIOD_CHOICES = [
+        ('day', 'Jour par jour (semaine courante)'),
+        ('week', 'Semaine par semaine (mois courant)'),
+        ('month', 'Mois par mois (année courante)'),
+        ('year', 'Année par année (5 dernières années)'),
+    ]
+    
+    # Paramètres de la requête
+    chart_type = serializers.ChoiceField(choices=CHART_TYPE_CHOICES)
+    period = serializers.ChoiceField(choices=PERIOD_CHOICES)
+    
+    # Données de réponse
+    labels = serializers.ListField(child=serializers.CharField(), read_only=True)
+    data = serializers.ListField(child=serializers.DecimalField(max_digits=15, decimal_places=2), read_only=True)
+    
+    # Méta-informations
+    chart_title = serializers.CharField(read_only=True)
+    chart_subtitle = serializers.CharField(read_only=True)
+    unit = serializers.CharField(read_only=True)  # 'FCFA', 'nombre', etc.
+    period_info = serializers.CharField(read_only=True)
+    total = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    
+    # Métadonnées pour l'échelle des graphiques
+    min_value = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    max_value = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    suggested_step = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    suggested_max = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    
+    # Informations de contexte
+    generated_at = serializers.DateTimeField(read_only=True) 

@@ -235,7 +235,7 @@ class Booking(models.Model):
                     break
         
         if not self.pk:  # Nouvelle instance
-            self.status = 'pj'
+            self.status = 'ongoing'
             
         roomPrice = self.room.type.price
         if self.coupon:

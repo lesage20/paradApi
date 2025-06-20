@@ -8,12 +8,13 @@ from django.utils import timezone
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 
-from hotel.models import Booking, Room, Payment, RoomType
+from hotel.models import Booking, Room, Payment, RoomType, Reservation
 from userAccount.models import Profil
 from .serializers import (
     UnifiedKPISerializer,
     PeriodFilterSerializer,
-    DashboardSummarySerializer
+    DashboardSummarySerializer,
+    ChartDataSerializer
 )
 
 
@@ -108,9 +109,9 @@ class UnifiedKPIView(APIView):
         end_of_day = timezone.make_aware(end_of_day)
         
         # Revenus du jour
-        revenus_jour = Booking.objects.filter(
+        revenus_jour = Payment.objects.filter(
             created_at__range=[start_of_day, end_of_day]
-        ).aggregate(total=Sum('amountPaid'))['total'] or Decimal('0')
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
         
         # Locations actives
         locations_actives = Booking.objects.filter(
@@ -266,13 +267,16 @@ class UnifiedKPIView(APIView):
         """Calculer les KPIs pour les administrateurs sur une période donnée"""
         
         # Filtrer les bookings dans la période
-        bookings = Booking.objects.filter(
+        payments = Payment.objects.filter(
             created_at__range=[start_date, end_date]
+        )
+        bookings = Booking.objects.filter(
+            checkIn__range=[start_date, end_date]
         )
         
         # Calculer le revenu total (somme des montants payés)
-        revenu_total = bookings.aggregate(
-            total=Sum('amountPaid')
+        revenu_total = payments.aggregate(
+            total=Sum('amount')
         )['total'] or Decimal('0')
         
         # Nombre total de locations
@@ -407,3 +411,489 @@ class DashboardSummaryView(APIView):
         }
         
         return Response(data, status=status.HTTP_200_OK)
+
+
+class ChartDataView(APIView):
+    """API pour les données de graphiques du dashboard"""
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Retourner les données pour les graphiques selon le type et la période"""
+        
+        # Récupérer les paramètres
+        chart_type = request.query_params.get('type', 'revenus')
+        period = request.query_params.get('period', 'day')
+        
+        # Valider les paramètres
+        valid_chart_types = ['revenus', 'occupation', 'reservations']
+        valid_periods = ['day', 'week', 'month', 'year']
+        
+        if chart_type not in valid_chart_types:
+            return Response(
+                {'error': f'Type de graphique invalide. Types valides: {valid_chart_types}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if period not in valid_periods:
+            return Response(
+                {'error': f'Période invalide. Périodes valides: {valid_periods}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Générer les données selon le type et la période
+            if chart_type == 'revenus':
+                data = self._get_revenue_data(period)
+            elif chart_type == 'occupation':
+                data = self._get_occupation_data(period)
+            elif chart_type == 'reservations':
+                data = self._get_reservations_data(period)
+            
+            # Ajouter les méta-informations
+            data.update({
+                'chart_type': chart_type,
+                'period': period,
+                'generated_at': timezone.now().isoformat()
+            })
+            
+            return Response(data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la génération des données: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _get_revenue_data(self, period):
+        """Obtenir les données de revenus selon la période"""
+        now = timezone.now()
+        today = now.date()
+        
+        if period == 'day':
+            # Données jour par jour pour la semaine courante
+            start_of_week = today - timedelta(days=today.weekday())
+            labels = []
+            data = []
+            
+            for i in range(7):
+                day = start_of_week + timedelta(days=i)
+                day_name = self._get_day_name(day.weekday())
+                labels.append(f"{day_name}\n{day.strftime('%d/%m')}")
+                
+                start_day = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+                end_day = timezone.make_aware(datetime.combine(day, datetime.max.time()))
+                
+                daily_revenue = Payment.objects.filter(
+                    created_at__range=[start_day, end_day]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                data.append(daily_revenue)
+            
+            chart_title = "Revenus par jour"
+            chart_subtitle = f"Semaine du {start_of_week.strftime('%d/%m/%Y')}"
+            period_info = "Semaine courante"
+            
+        elif period == 'week':
+            # Données semaine par semaine pour le mois courant
+            start_of_month = today.replace(day=1)
+            labels = []
+            data = []
+            
+            current_week_start = start_of_month
+            week_num = 1
+            
+            while current_week_start.month == today.month:
+                week_end = min(current_week_start + timedelta(days=6), 
+                              today.replace(month=today.month + 1 if today.month < 12 else 1, 
+                                          year=today.year + 1 if today.month == 12 else today.year, 
+                                          day=1) - timedelta(days=1))
+                
+                if week_end.month != today.month:
+                    week_end = today.replace(day=1).replace(month=today.month + 1 if today.month < 12 else 1) - timedelta(days=1)
+                
+                labels.append(f"Semaine {week_num}\n{current_week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m')}")
+                
+                start_week = timezone.make_aware(datetime.combine(current_week_start, datetime.min.time()))
+                end_week = timezone.make_aware(datetime.combine(week_end, datetime.max.time()))
+                
+                weekly_revenue = Payment.objects.filter(
+                    created_at__range=[start_week, end_week]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                data.append(weekly_revenue)
+                
+                current_week_start = week_end + timedelta(days=1)
+                week_num += 1
+                
+                if current_week_start > today:
+                    break
+            
+            chart_title = "Revenus par semaine"
+            chart_subtitle = f"{self._get_month_name(today.month)} {today.year}"
+            period_info = "Mois courant"
+            
+        elif period == 'month':
+            # Données mois par mois pour l'année courante
+            labels = []
+            data = []
+            
+            for month in range(1, 13):
+                month_name = self._get_month_name(month)
+                labels.append(month_name)
+                
+                start_month = timezone.make_aware(datetime.combine(
+                    today.replace(month=month, day=1), datetime.min.time()
+                ))
+                
+                if month == 12:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                else:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(month=month + 1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                
+                monthly_revenue = Payment.objects.filter(
+                    created_at__range=[start_month, end_month]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                data.append(monthly_revenue)
+            
+            chart_title = "Revenus par mois"
+            chart_subtitle = str(today.year)
+            period_info = "Année courante"
+            
+        elif period == 'year':
+            # Données des 5 dernières années
+            labels = []
+            data = []
+            
+            for i in range(4, -1, -1):  # De -4 à 0 (5 années)
+                year = today.year - i
+                labels.append(str(year))
+                
+                start_year = timezone.make_aware(datetime.combine(
+                    date(year, 1, 1), datetime.min.time()
+                ))
+                end_year = timezone.make_aware(datetime.combine(
+                    date(year, 12, 31), datetime.max.time()
+                ))
+                
+                yearly_revenue = Payment.objects.filter(
+                    created_at__range=[start_year, end_year]
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                
+                data.append(yearly_revenue)
+            
+            chart_title = "Revenus par année"
+            chart_subtitle = f"{today.year - 4} - {today.year}"
+            period_info = "5 dernières années"
+        
+        total = sum(data)
+        
+        return {
+            'labels': labels,
+            'data': data,
+            'chart_title': chart_title,
+            'chart_subtitle': chart_subtitle,
+            'unit': 'FCFA',
+            'period_info': period_info,
+            'total': total
+        }
+    
+    def _get_occupation_data(self, period):
+        """Obtenir les données d'occupation (nombre de locations) selon la période"""
+        now = timezone.now()
+        today = now.date()
+        
+        if period == 'day':
+            # Données jour par jour pour la semaine courante
+            start_of_week = today - timedelta(days=today.weekday())
+            labels = []
+            data = []
+            
+            for i in range(7):
+                day = start_of_week + timedelta(days=i)
+                day_name = self._get_day_name(day.weekday())
+                labels.append(f"{day_name}\n{day.strftime('%d/%m')}")
+                
+                start_day = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+                end_day = timezone.make_aware(datetime.combine(day, datetime.max.time()))
+                
+                daily_bookings = Booking.objects.filter(
+                    checkIn__range=[start_day, end_day]
+                ).count()
+                
+                data.append(daily_bookings)
+                print(data)
+            chart_title = "Locations par jour"
+            chart_subtitle = f"Semaine du {start_of_week.strftime('%d/%m/%Y')}"
+            period_info = "Semaine courante"
+            
+        elif period == 'week':
+            # Données semaine par semaine pour le mois courant
+            start_of_month = today.replace(day=1)
+            labels = []
+            data = []
+            
+            current_week_start = start_of_month
+            week_num = 1
+            
+            while current_week_start.month == today.month:
+                week_end = min(current_week_start + timedelta(days=6), 
+                              today.replace(month=today.month + 1 if today.month < 12 else 1, 
+                                          year=today.year + 1 if today.month == 12 else today.year, 
+                                          day=1) - timedelta(days=1))
+                
+                if week_end.month != today.month:
+                    week_end = today.replace(day=1).replace(month=today.month + 1 if today.month < 12 else 1) - timedelta(days=1)
+                
+                labels.append(f"Semaine {week_num}\n{current_week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m')}")
+                
+                start_week = timezone.make_aware(datetime.combine(current_week_start, datetime.min.time()))
+                end_week = timezone.make_aware(datetime.combine(week_end, datetime.max.time()))
+                
+                weekly_bookings = Booking.objects.filter(
+                    created_at__range=[start_week, end_week]
+                ).count()
+                
+                data.append(weekly_bookings)
+                
+                current_week_start = week_end + timedelta(days=1)
+                week_num += 1
+                
+                if current_week_start > today:
+                    break
+            
+            chart_title = "Locations par semaine"
+            chart_subtitle = f"{self._get_month_name(today.month)} {today.year}"
+            period_info = "Mois courant"
+            
+        elif period == 'month':
+            # Données mois par mois pour l'année courante
+            labels = []
+            data = []
+            
+            for month in range(1, 13):
+                month_name = self._get_month_name(month)
+                labels.append(month_name)
+                
+                start_month = timezone.make_aware(datetime.combine(
+                    today.replace(month=month, day=1), datetime.min.time()
+                ))
+                
+                if month == 12:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                else:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(month=month + 1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                
+                monthly_bookings = Booking.objects.filter(
+                    created_at__range=[start_month, end_month]
+                ).count()
+                
+                data.append(monthly_bookings)
+            
+            chart_title = "Locations par mois"
+            chart_subtitle = str(today.year)
+            period_info = "Année courante"
+            
+        elif period == 'year':
+            # Données des 5 dernières années
+            labels = []
+            data = []
+            
+            for i in range(4, -1, -1):  # De -4 à 0 (5 années)
+                year = today.year - i
+                labels.append(str(year))
+                
+                start_year = timezone.make_aware(datetime.combine(
+                    date(year, 1, 1), datetime.min.time()
+                ))
+                end_year = timezone.make_aware(datetime.combine(
+                    date(year, 12, 31), datetime.max.time()
+                ))
+                
+                yearly_bookings = Booking.objects.filter(
+                    created_at__range=[start_year, end_year]
+                ).count()
+                
+                data.append(yearly_bookings)
+            
+            chart_title = "Locations par année"
+            chart_subtitle = f"{today.year - 4} - {today.year}"
+            period_info = "5 dernières années"
+        
+        total = sum(data)
+        
+        return {
+            'labels': labels,
+            'data': data,
+            'chart_title': chart_title,
+            'chart_subtitle': chart_subtitle,
+            'unit': 'nombre',
+            'period_info': period_info,
+            'total': total
+        }
+    
+    def _get_reservations_data(self, period):
+        """Obtenir les données de réservations selon la période"""
+        now = timezone.now()
+        today = now.date()
+        
+        if period == 'day':
+            # Données jour par jour pour la semaine courante
+            start_of_week = today - timedelta(days=today.weekday())
+            labels = []
+            data = []
+            
+            for i in range(7):
+                day = start_of_week + timedelta(days=i)
+                day_name = self._get_day_name(day.weekday())
+                labels.append(f"{day_name}\n{day.strftime('%d/%m')}")
+                
+                start_day = timezone.make_aware(datetime.combine(day, datetime.min.time()))
+                end_day = timezone.make_aware(datetime.combine(day, datetime.max.time()))
+                
+                daily_reservations = Reservation.objects.filter(
+                    created_at__range=[start_day, end_day]
+                ).count()
+                
+                data.append(daily_reservations)
+            
+            chart_title = "Réservations par jour"
+            chart_subtitle = f"Semaine du {start_of_week.strftime('%d/%m/%Y')}"
+            period_info = "Semaine courante"
+            
+        elif period == 'week':
+            # Données semaine par semaine pour le mois courant
+            start_of_month = today.replace(day=1)
+            labels = []
+            data = []
+            
+            current_week_start = start_of_month
+            week_num = 1
+            
+            while current_week_start.month == today.month:
+                week_end = min(current_week_start + timedelta(days=6), 
+                              today.replace(month=today.month + 1 if today.month < 12 else 1, 
+                                          year=today.year + 1 if today.month == 12 else today.year, 
+                                          day=1) - timedelta(days=1))
+                
+                if week_end.month != today.month:
+                    week_end = today.replace(day=1).replace(month=today.month + 1 if today.month < 12 else 1) - timedelta(days=1)
+                
+                labels.append(f"Semaine {week_num}\n{current_week_start.strftime('%d/%m')} - {week_end.strftime('%d/%m')}")
+                
+                start_week = timezone.make_aware(datetime.combine(current_week_start, datetime.min.time()))
+                end_week = timezone.make_aware(datetime.combine(week_end, datetime.max.time()))
+                
+                weekly_reservations = Reservation.objects.filter(
+                    created_at__range=[start_week, end_week]
+                ).count()
+                
+                data.append(weekly_reservations)
+                
+                current_week_start = week_end + timedelta(days=1)
+                week_num += 1
+                
+                if current_week_start > today:
+                    break
+            
+            chart_title = "Réservations par semaine"
+            chart_subtitle = f"{self._get_month_name(today.month)} {today.year}"
+            period_info = "Mois courant"
+            
+        elif period == 'month':
+            # Données mois par mois pour l'année courante
+            labels = []
+            data = []
+            
+            for month in range(1, 13):
+                month_name = self._get_month_name(month)
+                labels.append(month_name)
+                
+                start_month = timezone.make_aware(datetime.combine(
+                    today.replace(month=month, day=1), datetime.min.time()
+                ))
+                
+                if month == 12:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                else:
+                    end_month = timezone.make_aware(datetime.combine(
+                        today.replace(month=month + 1, day=1) - timedelta(days=1), 
+                        datetime.max.time()
+                    ))
+                
+                monthly_reservations = Reservation.objects.filter(
+                    created_at__range=[start_month, end_month]
+                ).count()
+                
+                data.append(monthly_reservations)
+            
+            chart_title = "Réservations par mois"
+            chart_subtitle = str(today.year)
+            period_info = "Année courante"
+            
+        elif period == 'year':
+            # Données des 5 dernières années
+            labels = []
+            data = []
+            
+            for i in range(4, -1, -1):  # De -4 à 0 (5 années)
+                year = today.year - i
+                labels.append(str(year))
+                
+                start_year = timezone.make_aware(datetime.combine(
+                    date(year, 1, 1), datetime.min.time()
+                ))
+                end_year = timezone.make_aware(datetime.combine(
+                    date(year, 12, 31), datetime.max.time()
+                ))
+                
+                yearly_reservations = Reservation.objects.filter(
+                    created_at__range=[start_year, end_year]
+                ).count()
+                
+                data.append(yearly_reservations)
+            
+            chart_title = "Réservations par année"
+            chart_subtitle = f"{today.year - 4} - {today.year}"
+            period_info = "5 dernières années"
+        
+        total = sum(data)
+        
+        return {
+            'labels': labels,
+            'data': data,
+            'chart_title': chart_title,
+            'chart_subtitle': chart_subtitle,
+            'unit': 'nombre',
+            'period_info': period_info,
+            'total': total
+        }
+    
+    def _get_day_name(self, weekday):
+        """Retourner le nom du jour en français"""
+        days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+        return days[weekday]
+    
+    def _get_month_name(self, month):
+        """Retourner le nom du mois en français"""
+        months = [
+            '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        ]
+        return months[month]
